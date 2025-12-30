@@ -251,40 +251,32 @@ client.on("interactionCreate", async (interaction) => {
       content: "❌ Error verifying user.",
       ephemeral: true,
     });
-  }
+  } 
+});
 
-  if (interaction.isChatInputCommand() && interaction.commandName === "say") {
-    // Restrict to user 'waakul'
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+  if (interaction.commandName === "say") {
     if (interaction.user.username !== "waakul") {
-      return interaction.reply({
-        content: "❌ You are not allowed to use this command.",
-        ephemeral: true, // only they see this
-      });
+      return interaction.reply({ content: "❌ Not allowed.", ephemeral: true });
     }
-
+  
     const channel = interaction.options.getChannel("channel");
     const message = interaction.options.getString("message");
-
+  
     if (!channel || !channel.isTextBased()) {
-      return interaction.reply({
-        content: "❌ Please select a valid text channel.",
-        ephemeral: true,
-      });
+      return interaction.reply({ content: "❌ Invalid channel.", ephemeral: true });
     }
-
+  
+    // Respond to Discord immediately
+    await interaction.deferReply({ ephemeral: true });
+  
     try {
       await channel.send(message);
-      // Ephemeral confirmation — nobody else sees it
-      await interaction.reply({
-        content: `✅ Message sent to ${channel}.`,
-        ephemeral: true,
-      });
+      await interaction.editReply({ content: `✅ Sent to ${channel}` });
     } catch (err) {
       console.error(err);
-      await interaction.reply({
-        content: "❌ Failed to send the message.",
-        ephemeral: true,
-      });
+      await interaction.editReply({ content: "❌ Failed to send." });
     }
   }
 });
