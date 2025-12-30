@@ -9,6 +9,7 @@ import {
   Routes,
   ContextMenuCommandBuilder,
   ApplicationCommandType,
+  SlashCommandBuilder,
 } from "discord.js";
 import "dotenv/config";
 
@@ -27,7 +28,25 @@ const client = new Client({
 const commands = [
   new ContextMenuCommandBuilder()
     .setName("Verify")
-    .setType(ApplicationCommandType.Message) // right-click message
+    .setType(ApplicationCommandType.Message)
+    .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator)
+    .toJSON(),
+
+  new SlashCommandBuilder()
+    .setName("say")
+    .setDescription("Make the bot say something in a chosen channel")
+    .addChannelOption(option =>
+      option
+        .setName("channel")
+        .setDescription("Channel where the bot should send the message")
+        .setRequired(true)
+    )
+    .addStringOption(option =>
+      option
+        .setName("message")
+        .setDescription("Message for the bot to say")
+        .setRequired(true)
+    )
     .setDefaultMemberPermissions(PermissionsBitField.Flags.Administrator) // only admins
     .toJSON(),
 ];
@@ -232,6 +251,41 @@ client.on("interactionCreate", async (interaction) => {
       content: "❌ Error verifying user.",
       ephemeral: true,
     });
+  }
+
+  if (interaction.isChatInputCommand() && interaction.commandName === "say") {
+    // Restrict to user 'waakul'
+    if (interaction.user.username !== "waakul") {
+      return interaction.reply({
+        content: "❌ You are not allowed to use this command.",
+        ephemeral: true, // only they see this
+      });
+    }
+
+    const channel = interaction.options.getChannel("channel");
+    const message = interaction.options.getString("message");
+
+    if (!channel || !channel.isTextBased()) {
+      return interaction.reply({
+        content: "❌ Please select a valid text channel.",
+        ephemeral: true,
+      });
+    }
+
+    try {
+      await channel.send(message);
+      // Ephemeral confirmation — nobody else sees it
+      await interaction.reply({
+        content: `✅ Message sent to ${channel}.`,
+        ephemeral: true,
+      });
+    } catch (err) {
+      console.error(err);
+      await interaction.reply({
+        content: "❌ Failed to send the message.",
+        ephemeral: true,
+      });
+    }
   }
 });
 
